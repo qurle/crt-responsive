@@ -26,14 +26,32 @@ import "menus"
 ApplicationWindow {
     id: terminalWindow
 
-    width: 1024
-    height: 768
+    width: (appSettings.width > 0 ? appSettings.width : 1024)
+    height: (appSettings.height > 0 ? appSettings.height : 768)
+
+    property bool initialized: false
 
     // Save window properties automatically
-    onXChanged: appSettings.x = x
-    onYChanged: appSettings.y = y
-    onWidthChanged: appSettings.width = width
-    onHeightChanged: appSettings.height = height
+   onXChanged: {
+        if (initialized) {
+            appSettings.x = x
+        }
+    }
+    onYChanged: {
+        if (initialized) {
+            appSettings.y = y
+        }
+    }
+    onWidthChanged: {
+        if (initialized) {
+            appSettings.width = width
+        }
+    }
+    onHeightChanged: {
+        if (initialized) {
+            appSettings.height = height
+        }
+    }
 
     // Load saved window geometry and show the window
     Component.onCompleted: {
@@ -54,6 +72,18 @@ ApplicationWindow {
     onFullscreenChanged: visibility = (fullscreen ? Window.FullScreen : Window.Windowed)
 
     menuBar: qtquickMenuLoader.item
+
+    Connections {
+        target: appSettings
+
+        function onInitializedSettings() {
+            x = appSettings.x
+            y = appSettings.y
+            width = appSettings.width
+            height = appSettings.height
+            initialized = true
+        }
+    }
 
     Loader {
         id: qtquickMenuLoader
@@ -95,7 +125,8 @@ ApplicationWindow {
         id: quitAction
         text: qsTr("Quit")
         shortcut: "Ctrl+Shift+Q"
-        onTriggered: Qt.quit()
+        // onTriggered: Qt.quit()
+        onTriggered: terminalWindow.close()
     }
     Action {
         id: showsettingsAction
@@ -162,6 +193,12 @@ ApplicationWindow {
         }
     }
     onClosing: {
+        // Save window geometry as per Qt recommendations
+        appSettings.x = x
+        appSettings.y = y
+        appSettings.width = width
+        appSettings.height = height
+
         // OSX Since we are currently supporting only one window
         // quit the application when it is closed.
         if (appSettings.isMacOS)
